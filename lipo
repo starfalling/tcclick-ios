@@ -1,0 +1,12 @@
+#!/bin/sh
+
+lipo=/usr/bin/lipo
+
+project_lib_iphoneos=./build/Release-iphoneos/libtcclick.a
+project_lib_iphonesimulator=./build/Release-iphonesimulator/libtcclick.a
+target_lib=./release/libtcclick.a
+if [ -f $project_lib_iphoneos ] && [ -f $project_lib_iphonesimulator ]; then
+	$lipo -create "$project_lib_iphoneos" "$project_lib_iphonesimulator" -output "$target_lib"
+	echo "[created] $target_lib"
+fi
+cp ./build/*.h ./release
