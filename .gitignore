@@ -1,3 +1,4 @@
 build
+.DS_Store
 tcclick.xcodeproj/xcuserdata/*
 tcclick.xcodeproj/project.xcworkspace/xcuserdata

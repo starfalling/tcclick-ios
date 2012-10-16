@@ -1,12 +1,24 @@
 #!/bin/sh
 
 lipo=/usr/bin/lipo
+xcodebuild=/usr/bin/xcodebuild
+xcodebuild_armv6=/Applications/Xcode4.3.3/Xcode.app/Contents/Developer/usr/bin/xcodebuild
 
 project_lib_iphoneos=./build/Release-iphoneos/libtcclick.a
+project_lib_iphoneos_armv6=./build/Release-iphoneos-armv6/libtcclick.a
 project_lib_iphonesimulator=./build/Release-iphonesimulator/libtcclick.a
 target_lib=./release/libtcclick.a
-if [ -f $project_lib_iphoneos ] && [ -f $project_lib_iphonesimulator ]; then
-	$lipo -create "$project_lib_iphoneos" "$project_lib_iphonesimulator" -output "$target_lib"
-	echo "[created] $target_lib"
-fi
+
+
+rm -rf ./build/*
+
+$xcodebuild_armv6 -configuration=Release -arch armv6
+mv ./build/Release-iphoneos ./build/Release-iphoneos-armv6
+
+$xcodebuild -configuration=Release
+$xcodebuild -configuration=Release -sdk iphonesimulator
+
+
+$lipo -create "$project_lib_iphoneos_armv6" "$project_lib_iphoneos" "$project_lib_iphonesimulator" -output "$target_lib"
+file "$target_lib"
 cp ./build/*.h ./release
