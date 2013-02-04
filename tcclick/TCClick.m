@@ -35,6 +35,7 @@ TCClick* _sharedInstance;
 - (void) insertExceptionString:(NSString*)exceptionDescription md5:(NSString*)md5;
 - (void) installHandler;
 - (void) unInstallHandler;
+- (void) event:(NSString *)name param:(NSString *)param value:(NSString*)value;
 @end
 
 
@@ -144,6 +145,15 @@ static void tcclickSignalHandler(int signal){
     created_at integer unsigned not null\
     )";
     sqlite3_exec(database, sql, NULL, NULL, NULL);
+    sql = "create table if not exists events(\
+    id integer not null primary key autoincrement,\
+    name varchar(255),\
+    param varchar(255),\
+    value varchar(255),\
+    version varchar(255),\
+    created_at integer unsigned not null\
+    )";
+    sqlite3_exec(database, sql, NULL, NULL, NULL);
     sqlite3_close(database);
   }
 }
@@ -238,6 +248,21 @@ static void tcclickSignalHandler(int signal){
   }
 }
 
+- (void) deleteEventsWithIdEqualOrLower:(NSInteger)id{
+  sqlite3 *database;
+  sqlite3_stmt *stmt;
+  if (sqlite3_open([[self.class dbFilePath] UTF8String], &database)==SQLITE_OK) {
+    const char* sql = "delete from events where id<=:id";
+    if(sqlite3_prepare(database, sql, strlen(sql), &stmt, NULL) == SQLITE_OK){
+      int index = sqlite3_bind_parameter_index(stmt, ":id");
+      sqlite3_bind_int(stmt, index, id);
+      sqlite3_step(stmt);
+      sqlite3_finalize(stmt);
+    }
+    sqlite3_close(database);
+  }
+}
+
 + (TCClick*) sharedInstance{
   if (!_sharedInstance){
     _sharedInstance = [[TCClick alloc] init];
@@ -260,9 +285,56 @@ static void tcclickSignalHandler(int signal){
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 		NSString* documentsDirectory = [paths objectAtIndex:0];
     filePath = [[documentsDirectory stringByAppendingPathComponent:@".tcclick.db"] retain];
-//    NSLog(@"db file path: %@", filePath);
   }
   return filePath;
+}
+
+
++ (void)event:(NSString *)name{
+  [self event:name value:name];
+}
+
++ (void)event:(NSString *)name value:(NSString*)value{
+  [self event:name param:name value:value];
+}
+
++ (void)event:(NSString *)name param:(NSString *)param value:(NSString*)value{
+  [[self sharedInstance] event:name param:param value:value];
+}
+
+- (void) event:(NSString *)name param:(NSString *)param value:(NSString*)value{
+  if (!param || [param isEqualToString:@""]) param = name;
+  sqlite3 *database;
+  sqlite3_stmt *stmt;
+  if (sqlite3_open([[self.class dbFilePath] UTF8String], &database)==SQLITE_OK) {
+    const char* sql = "insert into events(name, param, value, version, created_at) values (:name, :param, :value, :version, :created_at)";
+    if(sqlite3_prepare(database, sql, strlen(sql), &stmt, NULL) == SQLITE_OK){
+      int index;
+      index = sqlite3_bind_parameter_index(stmt, ":name");
+      const char *cStr = [name UTF8String];
+      sqlite3_bind_text(stmt, index, cStr, strlen(cStr), SQLITE_TRANSIENT);
+      
+      index = sqlite3_bind_parameter_index(stmt, ":param");
+      const char* param5Str = [param UTF8String];
+      sqlite3_bind_text(stmt, index, param5Str, strlen(param5Str), SQLITE_TRANSIENT);
+      
+      index = sqlite3_bind_parameter_index(stmt, ":value");
+      const char* value5Str = [value UTF8String];
+      sqlite3_bind_text(stmt, index, value5Str, strlen(value5Str), SQLITE_TRANSIENT);
+      
+      index = sqlite3_bind_parameter_index(stmt, ":version");
+      NSString* app_version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
+      const char* version5Str = [app_version UTF8String];
+      sqlite3_bind_text(stmt, index, version5Str, strlen(version5Str), SQLITE_TRANSIENT);
+      
+      index = sqlite3_bind_parameter_index(stmt, ":created_at");
+      sqlite3_bind_int(stmt, index, (int)[[NSDate date] timeIntervalSince1970]);
+      
+      sqlite3_step(stmt);
+      sqlite3_finalize(stmt);
+    }
+    sqlite3_close(database);
+  }
 }
 
 #pragma mark - application notification listener
@@ -341,7 +413,7 @@ NSTimeInterval activity_start_at = 0;
   sqlite3 *database;
   sqlite3_stmt *stmt;
   if (sqlite3_open([[self.class dbFilePath] UTF8String], &database)==SQLITE_OK) {
-    const char* sql = "select id, start_at, end_at from activities";
+    const char* sql = "select id, start_at, end_at from activities order by id";
     if(sqlite3_prepare(database, sql, strlen(sql), &stmt, NULL) == SQLITE_OK){
       while (sqlite3_step(stmt)==SQLITE_ROW) {
         if(max_activity_id){ // 不是第一行
@@ -365,7 +437,7 @@ NSTimeInterval activity_start_at = 0;
   NSInteger max_exception_id = 0;
   [buffer appendString:@",\"exceptions\":["];
   if (sqlite3_open([[self.class dbFilePath] UTF8String], &database)==SQLITE_OK) {
-    const char* sql = "select id, exception, created_at, md5 from exceptions";
+    const char* sql = "select id, exception, created_at, md5 from exceptions order by id";
     if(sqlite3_prepare(database, sql, strlen(sql), &stmt, NULL) == SQLITE_OK){
       while (sqlite3_step(stmt)==SQLITE_ROW) {
         if(max_exception_id){ // 不是第一行
@@ -374,10 +446,7 @@ NSTimeInterval activity_start_at = 0;
           [buffer appendString:@"{"];
         }
         max_exception_id = sqlite3_column_int(stmt, 0);
-        NSString* exception = [[[[NSString stringWithFormat:@"%s", sqlite3_column_text(stmt, 1)]
-                                 stringByReplacingOccurrencesOfString:@"\r" withString:@"\\r"] 
-                                stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"] 
-                               stringByReplacingOccurrencesOfString:@"\t" withString:@"\\t"];
+        NSString* exception = [self stringForJsonEncoded:[NSString stringWithFormat:@"%s", sqlite3_column_text(stmt, 1)]];
         [buffer appendFormat:@"\"exception\":\"%@\"", exception];
         [buffer appendFormat:@",\"created_at\":%d", sqlite3_column_int(stmt, 2)];
         [buffer appendFormat:@",\"md5\":\"%s\"", sqlite3_column_text(stmt, 3)];
@@ -389,12 +458,48 @@ NSTimeInterval activity_start_at = 0;
   }
   [buffer appendString:@"]"];
   
+  
+  // 构建客户端自定义事件的json串
+  NSInteger max_event_id = 0;
+  [buffer appendString:@",\"events\":["];
+  if (sqlite3_open([[self.class dbFilePath] UTF8String], &database)==SQLITE_OK) {
+    const char* sql = "select id, name, param, value, version, created_at from events order by id";
+    if(sqlite3_prepare(database, sql, strlen(sql), &stmt, NULL) == SQLITE_OK){
+      while (sqlite3_step(stmt)==SQLITE_ROW) {
+        if(max_event_id){ // 不是第一行
+          [buffer appendString:@", {"];
+        }else{
+          [buffer appendString:@"{"];
+        }
+        max_event_id = sqlite3_column_int(stmt, 0);
+        NSString* name = [self stringForJsonEncoded:[NSString stringWithCString:(const char*)sqlite3_column_text(stmt, 1)
+                                                                       encoding:NSUTF8StringEncoding]];
+        NSString* param = [self stringForJsonEncoded:[NSString stringWithCString:(const char*)sqlite3_column_text(stmt, 2)
+                                                                       encoding:NSUTF8StringEncoding]];
+        NSString* value = [self stringForJsonEncoded:[NSString stringWithCString:(const char*)sqlite3_column_text(stmt, 3)
+                                                                        encoding:NSUTF8StringEncoding]];
+        NSString* version = [self stringForJsonEncoded:[NSString stringWithCString:(const char*)sqlite3_column_text(stmt, 4)
+                                                                        encoding:NSUTF8StringEncoding]];
+        [buffer appendFormat:@"\"name\":\"%@\"", name];
+        [buffer appendFormat:@",\"param\":\"%@\"", param];
+        [buffer appendFormat:@",\"value\":\"%@\"", value];
+        [buffer appendFormat:@",\"version\":\"%@\"", version];
+        [buffer appendFormat:@",\"created_at\":%d", sqlite3_column_int(stmt, 5)];
+        [buffer appendString:@"}"];
+      }
+      sqlite3_finalize(stmt);
+    }
+    sqlite3_close(database);
+  }
+  [buffer appendString:@"]"];
+  
+  
   [buffer appendString:@"}"];
   [buffer appendString:@"}"];
   
-//  NSLog(@"%@", [TCClickDevice getDeviceJsonMetrics:self]);
-//  NSLog(@"%@", buffer);
-//  NSLog(@"uploading data to: %@", self.uploadUrl);
+  NSLog(@"%@", [TCClickDevice getDeviceJsonMetrics:self]);
+  NSLog(@"%@", buffer);
+  NSLog(@"uploading data to: %@", self.uploadUrl);
   
   NSData* compressedData = [self compress:[buffer dataUsingEncoding:NSUTF8StringEncoding]];
   NSMutableURLRequest* request = [[NSMutableURLRequest alloc] initWithURL: [NSURL URLWithString:self.uploadUrl]];
@@ -409,6 +514,10 @@ NSTimeInterval activity_start_at = 0;
       // 删除掉之前存下来的activities
       [self deleteActivitiesWithIdEqualOrLower:max_activity_id];
     }
+    if(max_event_id){
+      // 删除之前存下来的那些客户端事件
+      [self deleteEventsWithIdEqualOrLower:max_event_id];
+    }
     [self deleteExceptions];
   }
     
@@ -417,6 +526,19 @@ NSTimeInterval activity_start_at = 0;
   [pool release];
 }
 
+
+- (NSString*) stringForJsonEncoded:(NSString*) originString{
+  NSMutableString* encoded = [NSMutableString stringWithString:originString];
+  [encoded replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  [encoded replaceOccurrencesOfString:@"\"" withString:@"\\\"" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  [encoded replaceOccurrencesOfString:@"/" withString:@"\\/" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  [encoded replaceOccurrencesOfString:@"\b" withString:@"\\b" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  [encoded replaceOccurrencesOfString:@"\f" withString:@"\\f" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  [encoded replaceOccurrencesOfString:@"\n" withString:@"\\n" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  [encoded replaceOccurrencesOfString:@"\r" withString:@"\\r" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  [encoded replaceOccurrencesOfString:@"\t" withString:@"\\t" options:NSCaseInsensitiveSearch range:NSMakeRange(0, encoded.length)];
+  return encoded;
+}
 
 @end
 

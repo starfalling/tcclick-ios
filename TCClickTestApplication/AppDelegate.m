@@ -20,6 +20,7 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions{
   [TCClick start:@"http://tcclicktest.sinaapp.com/api/upload.php" channel:@"AppStore"];
+  NSLog(@"tcclick store data in file: %@", [TCClick dbFilePath]);
   
   self.window = [[[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]] autorelease];
   // Override point for customization after application launch.

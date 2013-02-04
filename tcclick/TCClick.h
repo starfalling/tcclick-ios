@@ -17,4 +17,11 @@
 + (void) start:(NSString*) uploadUrl channel:(NSString*) channel;
 + (NSString*) udid;
 + (TCClick*) sharedInstance;
+
+
+// 记录发生了某一个事件，等同于 event:name param:name value:name
++ (void)event:(NSString *)name;
+// 记录发生了某一个事件，等同于 event:name param:name value:value
++ (void)event:(NSString *)name value:(NSString*)value;
++ (void)event:(NSString *)name param:(NSString *)param value:(NSString*)value;
 @end
