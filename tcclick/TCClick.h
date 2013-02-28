@@ -17,6 +17,7 @@
 + (void) start:(NSString*) uploadUrl channel:(NSString*) channel;
 + (NSString*) udid;
 + (TCClick*) sharedInstance;
++ (bool) isDeviceJailbroken;
 
 
 // 记录发生了某一个事件，等同于 event:name param:name value:name

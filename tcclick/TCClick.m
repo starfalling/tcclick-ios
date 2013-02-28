@@ -18,6 +18,7 @@
 // 获取设备相关信息并生成一个 json 字符串
 + (NSString*) getDeviceJsonMetrics:(TCClick*)tcclick;
 + (NSString*) getUDID;
++ (bool) isJailbroken;
 @end
 
 
@@ -274,6 +275,10 @@ static void tcclickSignalHandler(int signal){
   return [TCClickDevice getUDID];
 }
 
++ (bool) isDeviceJailbroken{
+  return [TCClickDevice isJailbroken];
+}
+
 + (void) start:(NSString*) uploadUrl channel:(NSString*) channel{
   [self sharedInstance].channel = channel;
   [self sharedInstance].uploadUrl = uploadUrl;
@@ -498,8 +503,8 @@ NSTimeInterval activity_start_at = 0;
   [buffer appendString:@"}"];
   
   NSLog(@"%@", [TCClickDevice getDeviceJsonMetrics:self]);
-  NSLog(@"%@", buffer);
-  NSLog(@"uploading data to: %@", self.uploadUrl);
+//  NSLog(@"%@", buffer);
+//  NSLog(@"uploading data to: %@", self.uploadUrl);
   
   NSData* compressedData = [self compress:[buffer dataUsingEncoding:NSUTF8StringEncoding]];
   NSMutableURLRequest* request = [[NSMutableURLRequest alloc] initWithURL: [NSURL URLWithString:self.uploadUrl]];
@@ -665,6 +670,19 @@ static NSString * const kTCClickUdidPastboardKey = @"TCCLICK_UDID_PASTBOARD";
   return @"unknow";
 }
 
++ (bool) isJailbroken{
+  static bool isChecked = NO;
+  static bool isJailbroken = NO;
+  if(!isChecked){
+    if ([[NSFileManager defaultManager] fileExistsAtPath:@"/Applications/Cydia.app"]) {
+      isJailbroken = YES;
+    }else if([[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/lib/apt"]){
+      isJailbroken = YES;
+    }
+  }
+  return isJailbroken;
+}
+
 + (NSString*) getDeviceJsonMetrics:(TCClick*)tcclick{
   NSMutableString* buffer = [[NSMutableString alloc] initWithCapacity:1024];
   
@@ -680,6 +698,7 @@ static NSString * const kTCClickUdidPastboardKey = @"TCCLICK_UDID_PASTBOARD";
   [buffer appendFormat:@", \"resolution\":\"%@\"", [self getResolution]];
   [buffer appendFormat:@", \"locale\":\"%@\"", [[NSLocale currentLocale] objectForKey: NSLocaleCountryCode]];
   [buffer appendFormat:@", \"network\":\"%@\"", [self getNetwork]];
+  [buffer appendFormat:@", \"jailbroken\":\"%@\"", [self isJailbroken]?@"true":@"false"];
   [buffer appendString:@"}"];
   
   return [buffer autorelease];
