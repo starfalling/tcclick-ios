@@ -502,7 +502,7 @@ NSTimeInterval activity_start_at = 0;
   [buffer appendString:@"}"];
   [buffer appendString:@"}"];
   
-  NSLog(@"%@", [TCClickDevice getDeviceJsonMetrics:self]);
+//  NSLog(@"%@", [TCClickDevice getDeviceJsonMetrics:self]);
 //  NSLog(@"%@", buffer);
 //  NSLog(@"uploading data to: %@", self.uploadUrl);
   
