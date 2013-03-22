@@ -569,11 +569,11 @@ static NSString * const kTCClickUdidPastboardKey = @"TCCLICK_UDID_PASTBOARD";
 @implementation TCClickDevice
 
 + (NSString*) generateFreshOpenUDID {
-  // 先按照 uniqueIdentifier 的方式去取 UDID，如果不成功再生成一个随机的 UUID
+  // 先按照 identifierForVendor 的方式去取 UDID，如果不成功再生成一个随机的 UUID
   UIDevice* device = [UIDevice currentDevice];
-  if ([device respondsToSelector:@selector(uniqueIdentifier)]){
-    NSString* uniqueIdentifier = [device performSelector:@selector(uniqueIdentifier)];
-    if (uniqueIdentifier && [uniqueIdentifier isKindOfClass:NSString.class] && [uniqueIdentifier length]==40){
+  if ([device respondsToSelector:@selector(identifierForVendor)]){
+    NSString* uniqueIdentifier = [[device performSelector:@selector(identifierForVendor)] UUIDString];
+    if (uniqueIdentifier && [uniqueIdentifier isKindOfClass:NSString.class]){
       return [TCClick md5:uniqueIdentifier];
     }
   }
@@ -620,7 +620,6 @@ static NSString * const kTCClickUdidPastboardKey = @"TCCLICK_UDID_PASTBOARD";
       udid = [self readUDIDFromPastboard];
       if(!udid){
         udid = [self generateFreshOpenUDID];
-      }else{
         [self writeUDIDToPastboard:udid];
       }
       [defaults setObject:udid forKey:kTCClickUdidKey];
