@@ -2,7 +2,7 @@
 
 lipo=/usr/bin/lipo
 xcodebuild=/usr/bin/xcodebuild
-xcodebuild_armv6=/Applications/Xcode4.3.3/Xcode.app/Contents/Developer/usr/bin/xcodebuild
+xcodebuild_armv6=/Applications/Xcode4.4/Xcode.app/Contents/Developer/usr/bin/xcodebuild
 
 project_lib_iphoneos=./build/Release-iphoneos/libtcclick.a
 project_lib_iphoneos_armv6=./build/Release-iphoneos-armv6/libtcclick.a

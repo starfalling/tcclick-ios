@@ -309,6 +309,7 @@ static void tcclickSignalHandler(int signal){
 
 - (void) event:(NSString *)name param:(NSString *)param value:(NSString*)value{
   if (!param || [param isEqualToString:@""]) param = name;
+  if (!value) value = @"";
   sqlite3 *database;
   sqlite3_stmt *stmt;
   if (sqlite3_open([[self.class dbFilePath] UTF8String], &database)==SQLITE_OK) {
