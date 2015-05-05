@@ -16,3 +16,8 @@ TCClick统计平台IOS客户端
 4. 加入tcclick的依赖库：libsqlite3.dylib, libz.dylib, CoreTelephony.framework, SystemConfiguration.framework
 
 5. 至此，TCClick的配置就完成了，启动应用，你的服务器端如果配置正确的话就可以看到数据了
+
+
+## 关于uniqueIdentifier被禁用
+
+最新版本已去除对uniqueIdentifier函数的调用，并且完全兼容之前的版本，更新tcclick不会导致用户被重复计数
