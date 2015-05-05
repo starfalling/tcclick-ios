@@ -7,6 +7,6 @@ Pod::Spec.new do |s|
   s.authors      = { "York.Gu" => "gyq5319920@gmail.com" }
   s.source       = { :git => "https://github.com/starfalling/tcclick-ios.git", :tag => "v#{s.version}" }
   s.platform     = :ios, '4.0'
-  s.requires_arc = true
+  s.requires_arc = false
   s.source_files = 'tcclick/TCClick.{h,m}'
 end
