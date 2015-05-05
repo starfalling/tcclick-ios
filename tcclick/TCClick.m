@@ -667,6 +667,15 @@ static NSString * const kTCClickUdidPastboardKey = @"TCCLICK_UDID_PASTBOARD";
   return @"unknow";
 }
 
++ (NSString*) getAppVersion{
+  return [[[NSBundle mainBundle] infoDictionary]
+          objectForKey:@"CFBundleShortVersionString"];
+}
+
++ (NSString*) getOsVersion{
+  return [[UIDevice currentDevice] systemVersion];
+}
+
 + (bool) isJailbroken{
   static bool isChecked = NO;
   static bool isJailbroken = NO;
@@ -688,9 +697,8 @@ static NSString * const kTCClickUdidPastboardKey = @"TCCLICK_UDID_PASTBOARD";
   [buffer appendFormat:@", \"channel\":\"%@\"", tcclick.channel];
   [buffer appendFormat:@", \"model\":\"%@\"", [self getModel]];
   [buffer appendString:@", \"brand\":\"Apple\""];
-  [buffer appendFormat:@", \"os_version\":\"%@\"", [[UIDevice currentDevice] systemVersion]];
-  [buffer appendFormat:@", \"app_version\":\"%@\"", [[[NSBundle mainBundle] infoDictionary] 
-                                                     objectForKey:@"CFBundleShortVersionString"]];
+  [buffer appendFormat:@", \"os_version\":\"%@\"", [self getOsVersion]];
+  [buffer appendFormat:@", \"app_version\":\"%@\"", [self getAppVersion]];
   [buffer appendFormat:@", \"carrier\":\"%@\"", [self getCarrier]];
   [buffer appendFormat:@", \"resolution\":\"%@\"", [self getResolution]];
   [buffer appendFormat:@", \"locale\":\"%@\"", [[NSLocale currentLocale] objectForKey: NSLocaleCountryCode]];

@@ -34,6 +34,8 @@
 + (NSString*) getCarrier;
 + (NSString*) getResolution;
 + (NSString*) getNetwork;
++ (NSString*) getAppVersion;
++ (NSString*) getOsVersion;
 + (bool) isJailbroken;
 @end
 
