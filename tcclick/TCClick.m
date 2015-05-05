@@ -14,11 +14,8 @@
 #import <CommonCrypto/CommonDigest.h>
 
 
-@interface TCClickDevice : NSObject
-// 获取设备相关信息并生成一个 json 字符串
+@interface TCClickDevice()
 + (NSString*) getDeviceJsonMetrics:(TCClick*)tcclick;
-+ (NSString*) getUDID;
-+ (bool) isJailbroken;
 @end
 
 

@@ -26,3 +26,14 @@
 + (void)event:(NSString *)name value:(NSString*)value;
 + (void)event:(NSString *)name param:(NSString *)param value:(NSString*)value;
 @end
+
+
+@interface TCClickDevice : NSObject
++ (NSString*) getUDID;
++ (NSString*) getModel;
++ (NSString*) getCarrier;
++ (NSString*) getResolution;
++ (NSString*) getNetwork;
++ (bool) isJailbroken;
+@end
+
